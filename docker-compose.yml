@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql8:
+    image: mysql:8.0.35
+    container_name: cadangkan-mysql8
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: cadangkan_test
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql8_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - cadangkan-network
+
+  mysql57:
+    image: mysql:5.7.44
+    container_name: cadangkan-mysql57
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: cadangkan_test
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql57_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cadangkan-network
+
+volumes:
+  mysql8_data:
+    driver: local
+  mysql57_data:
+    driver: local
+
+networks:
+  cadangkan-network:
+    driver: bridge

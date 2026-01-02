@@ -76,6 +76,7 @@ DB-Shield aims to provide:
 
 For detailed product specifications and roadmap, see:
 - [Product Specifications](docs/product-sepcifications.md)
+- [Architecture Decision Records (ADRs)](docs/adr/README.md) - Important architectural decisions and their context
 
 ## 🗺️ Roadmap
 

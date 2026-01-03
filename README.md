@@ -27,6 +27,46 @@ DB-Shield aims to provide:
 - Go 1.21 or higher
 - Docker and Docker Compose (for local testing)
 - Git
+- MySQL client tools (for `mysqldump` utility)
+
+### Installing mysqldump
+
+Cadangkan uses `mysqldump` to create database backups. You need to install MySQL client tools, **not the full MySQL server**.
+
+**Linux (Debian/Ubuntu):**
+```bash
+sudo apt-get install mysql-client
+```
+
+**Linux (RHEL/CentOS/Fedora):**
+```bash
+sudo yum install mysql  # or mysql-community-client
+# or on newer systems:
+sudo dnf install mysql
+```
+
+**macOS (Homebrew):**
+```bash
+brew install mysql-client
+```
+
+After installation on macOS, add to your PATH:
+```bash
+# Intel Macs
+echo 'export PATH="/usr/local/opt/mysql-client/bin:$PATH"' >> ~/.bash_profile
+
+# Apple Silicon (M1/M2)
+echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc
+```
+
+**Windows:**
+- Download [MySQL Installer](https://dev.mysql.com/downloads/installer/) and select only "MySQL Client" component
+- Or use Chocolatey: `choco install mysql.utilities`
+
+**Version Compatibility:**
+- MySQL client 8.0 is recommended for best compatibility with both MySQL 5.7 and 8.0 servers
+- A single `mysqldump` version can backup multiple MySQL server versions
+- Newer `mysqldump` can backup older MySQL servers without issues
 
 ### Getting Started
 
@@ -72,10 +112,72 @@ DB-Shield aims to provide:
 - Tests will run automatically on PR creation
 - All tests must pass before merging
 
+## 📦 Usage
+
+### Building the CLI
+
+```bash
+go build -o cadangkan ./cmd/cadangkan
+```
+
+### Backup MySQL Database
+
+**Basic backup:**
+```bash
+cadangkan backup --host=127.0.0.1 --user=root --password=secret --database=mydb
+```
+
+**With options:**
+```bash
+# Backup specific tables
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --tables=users,orders
+
+# Exclude specific tables
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --exclude-tables=logs,sessions
+
+# Schema only (no data)
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --schema-only
+
+# Custom output directory
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --output=/path/to/backups
+
+# Without compression
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --compression=none
+```
+
+**Important:** Use `127.0.0.1` instead of `localhost` when backing up Docker MySQL containers to avoid Unix socket connection issues.
+
+**Backup location:** Backups are stored in `~/.cadangkan/backups/[database]/` by default.
+
+### Command Options
+
+```
+cadangkan backup [flags]
+
+Flags:
+  --type string              Database type (default: "mysql")
+  --host string              Database host (default: "127.0.0.1")
+  --port int                 Database port (default: 3306)
+  --user string              Database user (required)
+  --password string          Database password
+  --database string          Database name (required)
+  --tables strings           Specific tables to backup
+  --exclude-tables strings   Tables to exclude from backup
+  --schema-only              Backup schema only (no data)
+  --compression string       Compression type: gzip, none (default: "gzip")
+  --output string            Output directory (default: ~/.cadangkan/backups)
+```
+
 ## 📖 Documentation
 
 For detailed product specifications and roadmap, see:
 - [Product Specifications](docs/product-sepcifications.md)
+- [Architecture Decision Records (ADRs)](docs/adr/README.md) - Important architectural decisions and their context
 
 ## 🗺️ Roadmap
 

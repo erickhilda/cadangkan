@@ -69,6 +69,7 @@ Create an ADR when making decisions about:
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
+| [0007](0007-mysqldump-backup-strategy.md) | mysqldump Backup Strategy | Accepted | 2025-01-02 |
 | [0006](0006-connection-pool-configuration.md) | Connection Pool Configuration | Accepted | 2025-01-02 |
 | [0005](0005-interface-based-mocking.md) | Interface-Based Client Design | Accepted | 2025-01-02 |
 | [0004](0004-custom-error-types.md) | Custom Error Types | Accepted | 2025-01-02 |

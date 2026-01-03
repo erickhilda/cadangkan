@@ -27,6 +27,46 @@ DB-Shield aims to provide:
 - Go 1.21 or higher
 - Docker and Docker Compose (for local testing)
 - Git
+- MySQL client tools (for `mysqldump` utility)
+
+### Installing mysqldump
+
+Cadangkan uses `mysqldump` to create database backups. You need to install MySQL client tools, **not the full MySQL server**.
+
+**Linux (Debian/Ubuntu):**
+```bash
+sudo apt-get install mysql-client
+```
+
+**Linux (RHEL/CentOS/Fedora):**
+```bash
+sudo yum install mysql  # or mysql-community-client
+# or on newer systems:
+sudo dnf install mysql
+```
+
+**macOS (Homebrew):**
+```bash
+brew install mysql-client
+```
+
+After installation on macOS, add to your PATH:
+```bash
+# Intel Macs
+echo 'export PATH="/usr/local/opt/mysql-client/bin:$PATH"' >> ~/.bash_profile
+
+# Apple Silicon (M1/M2)
+echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc
+```
+
+**Windows:**
+- Download [MySQL Installer](https://dev.mysql.com/downloads/installer/) and select only "MySQL Client" component
+- Or use Chocolatey: `choco install mysql.utilities`
+
+**Version Compatibility:**
+- MySQL client 8.0 is recommended for best compatibility with both MySQL 5.7 and 8.0 servers
+- A single `mysqldump` version can backup multiple MySQL server versions
+- Newer `mysqldump` can backup older MySQL servers without issues
 
 ### Getting Started
 

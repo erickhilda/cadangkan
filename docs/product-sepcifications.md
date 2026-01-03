@@ -1939,10 +1939,10 @@ databases:
 
 **Week 1: Core Backup**
 - [x] MySQL client implementation
-- [ ] Backup execution (mysqldump)
-- [ ] Local storage
-- [ ] Compression (gzip)
-- [ ] Metadata generation
+- [x] Backup execution (mysqldump)
+- [x] Local storage
+- [x] Compression (gzip)
+- [x] Metadata generation
 - [ ] CLI: `backup` command
 
 **Week 2: Configuration & Restore**

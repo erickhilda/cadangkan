@@ -1,0 +1,144 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.out
+coverage.html
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Build artifacts
+/bin/
+/dist/
+/build/
+/cadangkan
+/cmd/cadangkan/cadangkan
+
+# Dependency directories
+/vendor/
+
+# IDE - VSCode
+.vscode/
+*.code-workspace
+.history/
+
+# IDE - GoLand / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE - Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# IDE - Emacs
+*~
+\#*\#
+.\#*
+
+# OS - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# OS - Linux
+*~
+.directory
+.Trash-*
+
+# OS - Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Cadangkan specific - backup storage during development/testing
+.cadangkan/
+backups/
+*.sql
+*.sql.gz
+*.sql.zst
+*.meta.json
+
+# Cadangkan specific - configuration files with secrets
+config.local.yaml
+config.local.yml
+config.local.json
+*.local.yaml
+*.local.yml
+*.local.json
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database files used for testing
+*.db
+*.sqlite
+*.sqlite3
+
+# Air live reload (if used)
+.air.toml.local
+tmp/
+
+# Debug files
+__debug_bin
+debug.test
+
+# Performance profiles
+*.prof
+cpu.prof
+mem.prof
+block.prof
+
+# Documentation build artifacts
+/docs/_build/
+/docs/.doctrees/
+
+# Release artifacts
+*.tar.gz
+*.zip
+releases/
+
+# Certificate files (if any)
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# Backup files
+*.bak
+*.backup

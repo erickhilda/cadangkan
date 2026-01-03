@@ -112,6 +112,67 @@ echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc
 - Tests will run automatically on PR creation
 - All tests must pass before merging
 
+## 📦 Usage
+
+### Building the CLI
+
+```bash
+go build -o cadangkan ./cmd/cadangkan
+```
+
+### Backup MySQL Database
+
+**Basic backup:**
+```bash
+cadangkan backup --host=127.0.0.1 --user=root --password=secret --database=mydb
+```
+
+**With options:**
+```bash
+# Backup specific tables
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --tables=users,orders
+
+# Exclude specific tables
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --exclude-tables=logs,sessions
+
+# Schema only (no data)
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --schema-only
+
+# Custom output directory
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --output=/path/to/backups
+
+# Without compression
+cadangkan backup --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --compression=none
+```
+
+**Important:** Use `127.0.0.1` instead of `localhost` when backing up Docker MySQL containers to avoid Unix socket connection issues.
+
+**Backup location:** Backups are stored in `~/.cadangkan/backups/[database]/` by default.
+
+### Command Options
+
+```
+cadangkan backup [flags]
+
+Flags:
+  --type string              Database type (default: "mysql")
+  --host string              Database host (default: "127.0.0.1")
+  --port int                 Database port (default: 3306)
+  --user string              Database user (required)
+  --password string          Database password
+  --database string          Database name (required)
+  --tables strings           Specific tables to backup
+  --exclude-tables strings   Tables to exclude from backup
+  --schema-only              Backup schema only (no data)
+  --compression string       Compression type: gzip, none (default: "gzip")
+  --output string            Output directory (default: ~/.cadangkan/backups)
+```
+
 ## 📖 Documentation
 
 For detailed product specifications and roadmap, see:

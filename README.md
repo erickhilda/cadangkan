@@ -12,7 +12,7 @@ This project is in early development. We're currently setting up the foundation 
 
 ## 🎯 Vision
 
-DB-Shield aims to provide:
+Cadangkan aims to provide:
 
 - **Universal Backup Automation** - Works with MySQL, PostgreSQL, MongoDB, and more
 - **Free & Open Source** - No subscription costs, full control over your data
@@ -179,36 +179,9 @@ For detailed product specifications and roadmap, see:
 - [Product Specifications](docs/product-sepcifications.md)
 - [Architecture Decision Records (ADRs)](docs/adr/README.md) - Important architectural decisions and their context
 
-## 🗺️ Roadmap
-
-- **Phase 0** (Current): Project setup and CI/CD
-- **Phase 1** (Weeks 1-3): MySQL MVP - Backup, restore, and automation
-- **Phase 2** (Weeks 4-5): PostgreSQL support
-- **Phase 3** (Week 6): Cloud storage integration
-- **Phase 4** (Week 7): Clone and notifications
-- **Phase 5** (Weeks 8-10): Web interface
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how you can help:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request to the `develop` branch
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🌟 Project Goals
-
-- **6-Month Goals:**
-  - 500+ active users
-  - 200+ GitHub stars
-  - >99% backup success rate
-  - $150K+ in collective cost savings for users
 
 ## 📬 Contact
 

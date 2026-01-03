@@ -1943,7 +1943,7 @@ databases:
 - [x] Local storage
 - [x] Compression (gzip)
 - [x] Metadata generation
-- [ ] CLI: `backup` command
+- [x] CLI: `backup` command
 
 **Week 2: Configuration & Restore**
 - [ ] Configuration system (YAML)

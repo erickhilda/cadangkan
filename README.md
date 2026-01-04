@@ -120,34 +120,60 @@ echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc
 go build -o cadangkan ./cmd/cadangkan
 ```
 
+### Managing Database Connections
+
+**Add a database configuration:**
+```bash
+cadangkan add mysql production \
+  --host=mysql.example.com \
+  --user=backup_user \
+  --database=myapp
+# Enter password interactively
+```
+
+**List configured databases:**
+```bash
+cadangkan list
+```
+
+**Test connection:**
+```bash
+cadangkan test production
+```
+
+**Remove a database:**
+```bash
+cadangkan remove production
+```
+
 ### Backup MySQL Database
 
-**Basic backup:**
+**Using saved configuration (recommended):**
+```bash
+cadangkan backup production
+```
+
+**Direct mode (passing all flags):**
 ```bash
 cadangkan backup --host=127.0.0.1 --user=root --password=secret --database=mydb
 ```
 
-**With options:**
+**With backup options:**
 ```bash
 # Backup specific tables
-cadangkan backup --host=127.0.0.1 --user=root --password=secret \
-  --database=mydb --tables=users,orders
+cadangkan backup production --tables=users,orders
 
 # Exclude specific tables
-cadangkan backup --host=127.0.0.1 --user=root --password=secret \
-  --database=mydb --exclude-tables=logs,sessions
+cadangkan backup production --exclude-tables=logs,sessions
 
 # Schema only (no data)
-cadangkan backup --host=127.0.0.1 --user=root --password=secret \
-  --database=mydb --schema-only
+cadangkan backup production --schema-only
 
 # Custom output directory
-cadangkan backup --host=127.0.0.1 --user=root --password=secret \
-  --database=mydb --output=/path/to/backups
+cadangkan backup production --output=/path/to/backups
 
 # Without compression
-cadangkan backup --host=127.0.0.1 --user=root --password=secret \
-  --database=mydb --compression=none
+cadangkan backup production --compression=none
 ```
 
 **Important:** Use `127.0.0.1` instead of `localhost` when backing up Docker MySQL containers to avoid Unix socket connection issues.
@@ -156,16 +182,25 @@ cadangkan backup --host=127.0.0.1 --user=root --password=secret \
 
 ### Command Options
 
+**Database Management:**
 ```
-cadangkan backup [flags]
+cadangkan add mysql <name> [flags]      Add a database configuration
+cadangkan list                          List all configured databases
+cadangkan test <name>                   Test database connection
+cadangkan remove <name>                 Remove a database configuration
+```
+
+**Backup:**
+```
+cadangkan backup [name] [flags]
 
 Flags:
   --type string              Database type (default: "mysql")
-  --host string              Database host (default: "127.0.0.1")
-  --port int                 Database port (default: 3306)
-  --user string              Database user (required)
-  --password string          Database password
-  --database string          Database name (required)
+  --host string              Database host (overrides config)
+  --port int                 Database port (overrides config)
+  --user string              Database user (overrides config)
+  --password string          Database password (overrides config)
+  --database string          Database name (overrides config)
   --tables strings           Specific tables to backup
   --exclude-tables strings   Tables to exclude from backup
   --schema-only              Backup schema only (no data)
@@ -175,8 +210,9 @@ Flags:
 
 ## 📖 Documentation
 
-For detailed product specifications and roadmap, see:
-- [Product Specifications](docs/product-sepcifications.md)
+For detailed information, see:
+- [Configuration Guide](docs/CONFIGURATION.md) - Managing database connections
+- [Product Specifications](docs/product-sepcifications.md) - Full product vision and roadmap
 - [Architecture Decision Records (ADRs)](docs/adr/README.md) - Important architectural decisions and their context
 
 ## 📄 License

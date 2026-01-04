@@ -19,8 +19,14 @@ func main() {
 		Version: AppVersion,
 		Usage:   AppUsage,
 		Commands: []*cli.Command{
+			// Database management
+			addCommand(),
+			listCommand(),
+			testCommand(),
+			removeCommand(),
+			// Backup operations
 			backupCommand(),
-			// Future: addCommand(), listCommand(), restoreCommand()
+			// Future: restoreCommand(), scheduleCommand()
 		},
 	}
 

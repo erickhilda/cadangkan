@@ -69,6 +69,7 @@ Create an ADR when making decisions about:
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
+| [0009](0009-configuration-and-credential-storage.md) | Configuration Management and Credential Storage | Accepted | 2025-01-04 |
 | [0008](0008-cli-architecture.md) | CLI Architecture and User Interface Design | Accepted | 2025-01-03 |
 | [0007](0007-mysqldump-backup-strategy.md) | mysqldump Backup Strategy | Accepted | 2025-01-02 |
 | [0006](0006-connection-pool-configuration.md) | Connection Pool Configuration | Accepted | 2025-01-02 |

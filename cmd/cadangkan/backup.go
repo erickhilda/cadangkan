@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/erickhilda/cadangkan/internal/backup"
+	"github.com/erickhilda/cadangkan/internal/config"
 	"github.com/erickhilda/cadangkan/internal/storage"
 	"github.com/erickhilda/cadangkan/pkg/database/mysql"
 	"github.com/urfave/cli/v2"
@@ -15,6 +16,16 @@ func backupCommand() *cli.Command {
 		Name:      "backup",
 		Usage:     "Create database backup",
 		ArgsUsage: "[name]",
+		Description: `Create a backup of a database.
+
+   USAGE MODES:
+     1. Named mode (from config):
+        cadangkan backup <name>
+        
+     2. Direct mode (with flags):
+        cadangkan backup --host=<host> --user=<user> --database=<db> --password=<pass>
+
+   Flags can override config values when using named mode.`,
 		Flags: []cli.Flag{
 			// Database type
 			&cli.StringFlag{
@@ -23,30 +34,26 @@ func backupCommand() *cli.Command {
 				Usage: "Database type (mysql)",
 			},
 
-			// Connection flags
+			// Connection flags (now optional for named mode)
 			&cli.StringFlag{
 				Name:  "host",
-				Value: "127.0.0.1",
-				Usage: "Database host (use 127.0.0.1 for Docker)",
+				Usage: "Database host (overrides config)",
 			},
 			&cli.IntFlag{
 				Name:  "port",
-				Value: 3306,
-				Usage: "Database port",
+				Usage: "Database port (overrides config)",
 			},
 			&cli.StringFlag{
-				Name:     "user",
-				Required: true,
-				Usage:    "Database user",
+				Name:  "user",
+				Usage: "Database user (overrides config)",
 			},
 			&cli.StringFlag{
 				Name:  "password",
-				Usage: "Database password",
+				Usage: "Database password (overrides config)",
 			},
 			&cli.StringFlag{
-				Name:     "database",
-				Required: true,
-				Usage:    "Database name",
+				Name:  "database",
+				Usage: "Database name (overrides config)",
 			},
 
 			// Backup options
@@ -78,22 +85,95 @@ func backupCommand() *cli.Command {
 }
 
 func runBackup(c *cli.Context) error {
-	// 1. Parse and validate inputs
-	dbType := c.String("type")
-	if dbType != "mysql" {
-		return fmt.Errorf("unsupported database type: %s (only 'mysql' is supported)", dbType)
+	var host, user, password, database string
+	var port int
+	var usingConfig bool
+
+	// Check if using named mode (config) or direct mode (flags)
+	if c.NArg() > 0 {
+		// Named mode - load from config
+		name := c.Args().Get(0)
+		usingConfig = true
+
+		mgr, err := config.NewManager()
+		if err != nil {
+			return fmt.Errorf("failed to create config manager: %w", err)
+		}
+
+		dbConfig, err := mgr.GetDatabase(name)
+		if err != nil {
+			printError(fmt.Sprintf("Database '%s' not found in config", name))
+			fmt.Println()
+			fmt.Printf("Available databases: run %scadangkan list%s\n", colorCyan, colorReset)
+			fmt.Printf("Add a database:      run %scadangkan add mysql %s%s\n", colorCyan, name, colorReset)
+			return err
+		}
+
+		// Load config values
+		host = dbConfig.Host
+		port = dbConfig.Port
+		user = dbConfig.User
+		database = dbConfig.Database
+
+		// Decrypt password
+		password, err = config.DecryptPassword(dbConfig.PasswordEncrypted)
+		if err != nil {
+			return fmt.Errorf("failed to decrypt password: %w", err)
+		}
+
+		printInfo(fmt.Sprintf("Using configuration for '%s'", name))
+	} else {
+		// Direct mode - use flags
+		host = c.String("host")
+		port = c.Int("port")
+		user = c.String("user")
+		password = c.String("password")
+		database = c.String("database")
+
+		// Validate required flags for direct mode
+		if host == "" {
+			return fmt.Errorf("--host is required when not using named mode")
+		}
+		if user == "" {
+			return fmt.Errorf("--user is required when not using named mode")
+		}
+		if database == "" {
+			return fmt.Errorf("--database is required when not using named mode")
+		}
+		if port == 0 {
+			port = 3306 // Default port
+		}
 	}
 
-	host := c.String("host")
-	port := c.Int("port")
-	user := c.String("user")
-	password := c.String("password")
-	database := c.String("database")
+	// Allow flags to override config values
+	if c.IsSet("host") && usingConfig {
+		host = c.String("host")
+	}
+	if c.IsSet("port") && usingConfig {
+		port = c.Int("port")
+	}
+	if c.IsSet("user") && usingConfig {
+		user = c.String("user")
+	}
+	if c.IsSet("password") && usingConfig {
+		password = c.String("password")
+	}
+	if c.IsSet("database") && usingConfig {
+		database = c.String("database")
+	}
+
+	// Parse backup options
 	tables := c.StringSlice("tables")
 	excludeTables := c.StringSlice("exclude-tables")
 	schemaOnly := c.Bool("schema-only")
 	compression := c.String("compression")
 	outputDir := c.String("output")
+
+	// Validate database type
+	dbType := c.String("type")
+	if dbType != "mysql" {
+		return fmt.Errorf("unsupported database type: %s (only 'mysql' is supported)", dbType)
+	}
 
 	// 2. Check for mysqldump availability
 	printInfo("Checking mysqldump availability...")

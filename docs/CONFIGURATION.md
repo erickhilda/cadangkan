@@ -9,17 +9,18 @@ The configuration system allows you to save database credentials and manage mult
 Add a database configuration with interactive password prompt:
 
 ```bash
-cadangkan add mysql production --host=mysql.example.com --user=backup_user --database=myapp
+cadangkan add --host=mysql.example.com --user=backup_user --database=myapp mysql production
 ```
 
 Or use `--password-stdin` to read password from stdin:
 
 ```bash
-echo "mypassword" | cadangkan add mysql production \
+echo "mypassword" | cadangkan add \
   --host=mysql.example.com \
   --user=backup_user \
   --database=myapp \
-  --password-stdin
+  --password-stdin \
+  mysql production
 ```
 
 ### Listing Databases
@@ -163,7 +164,7 @@ cadangkan backup production --host=localhost --port=3307
 Add a new database configuration:
 
 ```bash
-cadangkan add mysql <name> [flags]
+cadangkan add [flags] mysql <name>
 ```
 
 **Required flags:**
@@ -181,15 +182,17 @@ cadangkan add mysql <name> [flags]
 
 ```bash
 # Interactive password prompt (recommended)
-cadangkan add mysql prod --host=db.example.com --user=backup --database=myapp
+cadangkan add --host=db.example.com --user=backup --database=myapp mysql prod
 
 # Read password from stdin
-echo "$DB_PASSWORD" | cadangkan add mysql prod \
-  --host=db.example.com --user=backup --database=myapp --password-stdin
+echo "$DB_PASSWORD" | cadangkan add \
+  --host=db.example.com --user=backup --database=myapp --password-stdin \
+  mysql prod
 
 # Skip connection test (faster, but doesn't verify credentials)
-cadangkan add mysql prod --host=db.example.com --user=backup \
-  --database=myapp --skip-test
+cadangkan add --host=db.example.com --user=backup \
+  --database=myapp --skip-test \
+  mysql prod
 ```
 
 ### list
@@ -282,7 +285,7 @@ Error: database 'production' not found in config
 **Solution:** Add the database first with `cadangkan add`
 
 ```bash
-cadangkan add mysql production --host=... --user=... --database=...
+cadangkan add --host=... --user=... --database=... mysql production
 ```
 
 ### "Failed to decrypt password"
@@ -293,7 +296,7 @@ This usually means the encryption key has been lost or corrupted.
 
 ```bash
 cadangkan remove production --force
-cadangkan add mysql production --host=... --user=... --database=...
+cadangkan add --host=... --user=... --database=... mysql production
 ```
 
 ### "Connection failed"
@@ -313,7 +316,7 @@ Error: connection test failed: dial tcp: connect: connection refused
 
 ```bash
 cadangkan remove production --force
-cadangkan add mysql production --host=correct-host --user=... --database=...
+cadangkan add --host=correct-host --user=... --database=... mysql production
 ```
 
 ### Lost encryption key
@@ -343,10 +346,11 @@ cadangkan backup \
 **After:**
 ```bash
 # One-time setup
-cadangkan add mysql production \
+cadangkan add \
   --host=mysql.example.com \
   --user=backup_user \
-  --database=myapp
+  --database=myapp \
+  mysql production
 # Password: [enter interactively]
 
 # Future backups
@@ -362,10 +366,11 @@ export DB_HOST="mysql.example.com"
 export DB_USER="backup_user"
 export DB_NAME="myapp"
 
-cadangkan add mysql production \
+cadangkan add \
   --host=$DB_HOST \
   --user=$DB_USER \
-  --database=$DB_NAME
+  --database=$DB_NAME \
+  mysql production
 ```
 
 ## Next Steps

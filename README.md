@@ -124,10 +124,10 @@ go build -o cadangkan ./cmd/cadangkan
 
 **Add a database configuration:**
 ```bash
-cadangkan add mysql production \
-  --host=mysql.example.com \
+cadangkan add --host=mysql.example.com \
   --user=backup_user \
-  --database=myapp
+  --database=myapp \
+  mysql production
 # Enter password interactively
 ```
 
@@ -184,7 +184,7 @@ cadangkan backup production --compression=none
 
 **Database Management:**
 ```
-cadangkan add mysql <name> [flags]      Add a database configuration
+cadangkan add [flags] mysql <name>      Add a database configuration
 cadangkan list                          List all configured databases
 cadangkan test <name>                   Test database connection
 cadangkan remove <name>                 Remove a database configuration

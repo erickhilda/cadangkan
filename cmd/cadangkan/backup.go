@@ -79,6 +79,11 @@ func backupCommand() *cli.Command {
 				Value: "",
 				Usage: "Output directory (default: ~/.cadangkan/backups)",
 			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "Show verbose output including mysqldump command",
+			},
 		},
 		Action: runBackup,
 	}
@@ -233,6 +238,12 @@ func runBackup(c *cli.Context) error {
 
 	// 6. Create backup service
 	service := backup.NewService(client, localStorage, config)
+
+	// Enable verbose mode if requested
+	verbose := c.Bool("verbose")
+	if verbose {
+		service.SetVerbose(true)
+	}
 
 	// 7. Execute backup with progress
 	printInfo("Starting backup...")

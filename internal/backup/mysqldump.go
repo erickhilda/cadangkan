@@ -64,6 +64,12 @@ type DumpResult struct {
 // Dump executes mysqldump and returns a reader for the output.
 // The caller is responsible for closing the returned reader.
 func (d *MySQLDumper) Dump(database string, options *DumpOptions) (io.ReadCloser, error) {
+	return d.DumpWithCommand(database, options, nil)
+}
+
+// DumpWithCommand executes mysqldump and returns a reader for the output.
+// If cmdLogger is provided, it will be called with the full command for debugging.
+func (d *MySQLDumper) DumpWithCommand(database string, options *DumpOptions, cmdLogger func(string)) (io.ReadCloser, error) {
 	if options == nil {
 		options = DefaultDumpOptions()
 	}
@@ -71,10 +77,28 @@ func (d *MySQLDumper) Dump(database string, options *DumpOptions) (io.ReadCloser
 	// Build mysqldump command
 	args := d.buildArgs(database, options)
 
+	// Log command if logger provided (for debugging)
+	if cmdLogger != nil {
+		// Mask password in logged command
+		logArgs := make([]string, len(args))
+		copy(logArgs, args)
+		for i, arg := range logArgs {
+			if strings.HasPrefix(arg, "--password=") {
+				logArgs[i] = "--password=***"
+			}
+		}
+		cmdStr := fmt.Sprintf("mysqldump %s", strings.Join(logArgs, " "))
+		cmdLogger(cmdStr)
+	}
+
 	// Create command with context for timeout
 	ctx, cancel := context.WithTimeout(context.Background(), d.timeout)
 
 	cmd := exec.CommandContext(ctx, "mysqldump", args...)
+
+	// Capture stderr to detect warnings/errors
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
 
 	// Get stdout pipe
 	stdout, err := cmd.StdoutPipe()
@@ -95,6 +119,7 @@ func (d *MySQLDumper) Dump(database string, options *DumpOptions) (io.ReadCloser
 		cmd:      cmd,
 		cancel:   cancel,
 		database: database,
+		stderr:   &stderrBuf,
 	}, nil
 }
 
@@ -227,6 +252,7 @@ type dumpReader struct {
 	cmd      *exec.Cmd
 	cancel   context.CancelFunc
 	database string
+	stderr   *bytes.Buffer
 	closed   bool
 }
 
@@ -250,18 +276,39 @@ func (r *dumpReader) Close() error {
 
 	// Wait for command to finish
 	err := r.cmd.Wait()
+	stderr := ""
+	if r.stderr != nil {
+		stderr = r.stderr.String()
+	}
 	r.cancel()
 
 	if err != nil {
 		exitCode := getExitCode(err)
-		// Get stderr if available
-		stderr := ""
-		if r.cmd.Stderr != nil {
-			if buf, ok := r.cmd.Stderr.(*bytes.Buffer); ok {
-				stderr = buf.String()
+		return WrapDumpError(r.database, "mysqldump", stderr, exitCode, err)
+	}
+
+	// Check for warnings in stderr even if exit code is 0
+	// mysqldump may succeed but only dump schema if there are permission issues
+	if stderr != "" {
+		// Check for common warning patterns that indicate problems
+		warningPatterns := []string{
+			"access denied",
+			"got error",
+			"warning:",
+			"error:",
+			"mysqldump:",
+			"cannot",
+			"failed",
+			"denied",
+		}
+
+		lowerStderr := strings.ToLower(stderr)
+		for _, pattern := range warningPatterns {
+			if strings.Contains(lowerStderr, pattern) {
+				// Return error with stderr to surface the warning
+				return WrapDumpError(r.database, "mysqldump", stderr, 0, fmt.Errorf("mysqldump completed but reported warnings: %s", stderr))
 			}
 		}
-		return WrapDumpError(r.database, "mysqldump", stderr, exitCode, err)
 	}
 
 	return nil

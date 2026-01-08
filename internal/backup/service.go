@@ -1,7 +1,9 @@
 package backup
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/erickhilda/cadangkan/internal/storage"
@@ -10,9 +12,10 @@ import (
 
 // Service orchestrates backup operations.
 type Service struct {
-	client   mysql.DatabaseClient
-	storage  *storage.LocalStorage
-	config   *mysql.Config
+	client  mysql.DatabaseClient
+	storage *storage.LocalStorage
+	config  *mysql.Config
+	verbose bool
 }
 
 // NewService creates a new backup service.
@@ -21,7 +24,13 @@ func NewService(client mysql.DatabaseClient, stor *storage.LocalStorage, config 
 		client:  client,
 		storage: stor,
 		config:  config,
+		verbose: false,
 	}
+}
+
+// SetVerbose enables or disables verbose logging.
+func (s *Service) SetVerbose(verbose bool) {
+	s.verbose = verbose
 }
 
 // Backup performs a complete backup operation.
@@ -68,11 +77,11 @@ func (s *Service) Backup(options *BackupOptions) (*BackupResult, error) {
 	if err != nil {
 		// Clean up partial backup
 		s.storage.CleanupPartialBackup(options.Database, backupID, options.Compression)
-		
+
 		// Mark metadata as failed
 		MarkFailed(metadata, err)
 		s.storage.SaveMetadata(options.Database, backupID, metadata)
-		
+
 		return nil, err
 	}
 
@@ -114,12 +123,28 @@ func (s *Service) performBackup(options *BackupOptions, result *BackupResult) er
 	// Create dumper
 	dumper := NewMySQLDumper(s.config)
 
-	// Get dump reader
-	dumpReader, err := dumper.Dump(options.Database, dumpOpts)
+	// Get dump reader with optional command logging
+	var dumpReader io.ReadCloser
+	var err error
+	if s.verbose {
+		dumpReader, err = dumper.DumpWithCommand(options.Database, dumpOpts, func(cmd string) {
+			fmt.Printf("[DEBUG] Executing: %s\n", cmd)
+		})
+	} else {
+		dumpReader, err = dumper.Dump(options.Database, dumpOpts)
+	}
 	if err != nil {
 		return WrapBackupError(options.Database, "failed to start dump", err)
 	}
-	defer dumpReader.Close()
+	defer func() {
+		// Capture any errors from closing (which includes stderr warnings)
+		if closeErr := dumpReader.Close(); closeErr != nil {
+			// If we haven't already set an error, use the close error
+			if err == nil {
+				err = WrapBackupError(options.Database, "mysqldump warnings detected", closeErr)
+			}
+		}
+	}()
 
 	// Create compressor
 	compressor := NewCompressor(options.Compression)
@@ -134,7 +159,29 @@ func (s *Service) performBackup(options *BackupOptions, result *BackupResult) er
 	result.SizeBytes = compressResult.BytesWritten
 	result.Checksum = compressResult.Checksum
 
-	return nil
+	// Check if backup size is suspiciously small (might indicate schema-only dump)
+	// Warn if backup is less than 1MB for a database that should be large
+	if result.SizeBytes < 1024*1024 && !options.SchemaOnly {
+		// Extract stderr from any DumpError in the error chain
+		stderrMsg := extractStderrFromError(err)
+
+		errorMsg := fmt.Sprintf("backup size is suspiciously small (%s). This might indicate only schema was backed up.", FormatBytes(result.SizeBytes))
+		if stderrMsg != "" {
+			errorMsg += fmt.Sprintf("\n\nmysqldump stderr output:\n%s", stderrMsg)
+		}
+		errorMsg += "\n\nTo diagnose this issue:"
+		errorMsg += "\n1. Check MySQL user permissions (see below)"
+		errorMsg += "\n2. Verify the database actually contains data"
+		errorMsg += "\n3. Check if tables are empty or have restricted access"
+
+		return WrapBackupError(
+			options.Database,
+			errorMsg,
+			fmt.Errorf("backup size: %d bytes", result.SizeBytes),
+		)
+	}
+
+	return err
 }
 
 // validateOptions validates backup options.
@@ -371,4 +418,24 @@ func (s *Service) CheckConnectivity() error {
 	}
 
 	return s.client.Ping()
+}
+
+// extractStderrFromError extracts stderr from a DumpError in the error chain.
+func extractStderrFromError(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	var dumpErr *DumpError
+	if errors.As(err, &dumpErr) && dumpErr.Stderr != "" {
+		return dumpErr.Stderr
+	}
+
+	// Check wrapped errors
+	unwrapped := errors.Unwrap(err)
+	if unwrapped != nil {
+		return extractStderrFromError(unwrapped)
+	}
+
+	return ""
 }

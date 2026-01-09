@@ -33,6 +33,15 @@ func (s *Service) SetVerbose(verbose bool) {
 	s.verbose = verbose
 }
 
+// getStorageName returns the name to use for storage paths.
+// Uses ConfigName if available, otherwise falls back to Database name.
+func getStorageName(options *BackupOptions) string {
+	if options.ConfigName != "" {
+		return options.ConfigName
+	}
+	return options.Database
+}
+
 // Backup performs a complete backup operation.
 func (s *Service) Backup(options *BackupOptions) (*BackupResult, error) {
 	if options == nil {
@@ -55,8 +64,11 @@ func (s *Service) Backup(options *BackupOptions) (*BackupResult, error) {
 		Status:    StatusRunning,
 	}
 
+	// Get storage name (config name if available, otherwise database name)
+	storageName := getStorageName(options)
+
 	// Ensure database directory exists
-	if err := s.storage.EnsureDatabaseDir(options.Database); err != nil {
+	if err := s.storage.EnsureDatabaseDir(storageName); err != nil {
 		return nil, err
 	}
 
@@ -66,8 +78,8 @@ func (s *Service) Backup(options *BackupOptions) (*BackupResult, error) {
 	}
 
 	// Get file paths
-	result.FilePath = s.storage.GetBackupPath(options.Database, backupID, options.Compression)
-	result.MetadataPath = s.storage.GetMetadataPath(options.Database, backupID)
+	result.FilePath = s.storage.GetBackupPath(storageName, backupID, options.Compression)
+	result.MetadataPath = s.storage.GetMetadataPath(storageName, backupID)
 
 	// Create initial metadata
 	metadata := CreateInitialMetadata(backupID, options.Database, s.config, options)
@@ -76,11 +88,11 @@ func (s *Service) Backup(options *BackupOptions) (*BackupResult, error) {
 	err := s.performBackup(options, result)
 	if err != nil {
 		// Clean up partial backup
-		s.storage.CleanupPartialBackup(options.Database, backupID, options.Compression)
+		s.storage.CleanupPartialBackup(storageName, backupID, options.Compression)
 
 		// Mark metadata as failed
 		MarkFailed(metadata, err)
-		s.storage.SaveMetadata(options.Database, backupID, metadata)
+		s.storage.SaveMetadata(storageName, backupID, metadata)
 
 		return nil, err
 	}
@@ -101,7 +113,7 @@ func (s *Service) Backup(options *BackupOptions) (*BackupResult, error) {
 	}
 
 	// Save metadata
-	if err := s.storage.SaveMetadata(options.Database, backupID, finalMetadata); err != nil {
+	if err := s.storage.SaveMetadata(storageName, backupID, finalMetadata); err != nil {
 		return nil, err
 	}
 

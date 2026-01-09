@@ -90,7 +90,7 @@ func backupCommand() *cli.Command {
 }
 
 func runBackup(c *cli.Context) error {
-	var host, user, password, database string
+	var host, user, password, database, configName string
 	var port int
 	var usingConfig bool
 
@@ -98,6 +98,7 @@ func runBackup(c *cli.Context) error {
 	if c.NArg() > 0 {
 		// Named mode - load from config
 		name := c.Args().Get(0)
+		configName = name
 		usingConfig = true
 
 		mgr, err := config.NewManager()
@@ -250,6 +251,7 @@ func runBackup(c *cli.Context) error {
 
 	options := &backup.BackupOptions{
 		Database:      database,
+		ConfigName:    configName,
 		Tables:        tables,
 		ExcludeTables: excludeTables,
 		SchemaOnly:    schemaOnly,

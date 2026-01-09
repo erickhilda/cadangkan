@@ -7,6 +7,10 @@ type BackupOptions struct {
 	// Database name to backup
 	Database string
 
+	// ConfigName is the configuration name (used for storage paths)
+	// If empty, falls back to using Database name
+	ConfigName string
+
 	// Tables to include (empty means all tables)
 	Tables []string
 
@@ -212,10 +216,10 @@ const (
 
 // Constants for backup phases
 const (
-	PhaseConnecting = "connecting"
-	PhaseDumping    = "dumping"
+	PhaseConnecting  = "connecting"
+	PhaseDumping     = "dumping"
 	PhaseCompressing = "compressing"
-	PhaseFinalizing = "finalizing"
+	PhaseFinalizing  = "finalizing"
 )
 
 // DefaultOptions returns BackupOptions with sensible defaults.

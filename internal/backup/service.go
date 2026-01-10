@@ -174,23 +174,20 @@ func (s *Service) performBackup(options *BackupOptions, result *BackupResult) er
 	// Check if backup size is suspiciously small (might indicate schema-only dump)
 	// Warn if backup is less than 1MB for a database that should be large
 	if result.SizeBytes < 1024*1024 && !options.SchemaOnly {
-		// Extract stderr from any DumpError in the error chain
-		stderrMsg := extractStderrFromError(err)
-
-		errorMsg := fmt.Sprintf("backup size is suspiciously small (%s). This might indicate only schema was backed up.", FormatBytes(result.SizeBytes))
-		if stderrMsg != "" {
-			errorMsg += fmt.Sprintf("\n\nmysqldump stderr output:\n%s", stderrMsg)
+		// Print warning but continue with backup
+		if s.verbose {
+			warningMsg := fmt.Sprintf("[WARNING] Backup size is small (%s). ", FormatBytes(result.SizeBytes))
+			warningMsg += "This might indicate:\n"
+			warningMsg += "  - Database is legitimately small\n"
+			warningMsg += "  - Only schema was backed up (check permissions)\n"
+			warningMsg += "  - Tables are empty or have restricted access\n"
+			warningMsg += "  - Verify the database actually contains data\n"
+			fmt.Printf("%s\n", warningMsg)
+		} else {
+			fmt.Printf("⚠ Warning: Backup size is small (%s). This might indicate only schema was backed up.\n", FormatBytes(result.SizeBytes))
+			fmt.Printf("  Verify the database contains data and check MySQL user permissions.\n")
 		}
-		errorMsg += "\n\nTo diagnose this issue:"
-		errorMsg += "\n1. Check MySQL user permissions (see below)"
-		errorMsg += "\n2. Verify the database actually contains data"
-		errorMsg += "\n3. Check if tables are empty or have restricted access"
-
-		return WrapBackupError(
-			options.Database,
-			errorMsg,
-			fmt.Errorf("backup size: %d bytes", result.SizeBytes),
-		)
+		// Continue with backup - don't return error
 	}
 
 	return err

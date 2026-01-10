@@ -26,7 +26,8 @@ func main() {
 			removeCommand(),
 			// Backup operations
 			backupCommand(),
-			// Future: restoreCommand(), scheduleCommand()
+			restoreCommand(),
+			// Future: scheduleCommand()
 		},
 	}
 

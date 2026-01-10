@@ -34,10 +34,10 @@ type MockClient struct {
 	DBInfoErr    error
 
 	// Query responses
-	QueryRows   *sql.Rows
-	QueryErr    error
-	ExecResult  sql.Result
-	ExecErr     error
+	QueryRows  *sql.Rows
+	QueryErr   error
+	ExecResult sql.Result
+	ExecErr    error
 
 	// Call tracking
 	Calls []MockCall
@@ -237,6 +237,53 @@ func (m *MockClient) GetDatabases() ([]string, error) {
 	}
 
 	return m.Databases, nil
+}
+
+// CreateDatabase creates a new database.
+func (m *MockClient) CreateDatabase(database string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.recordCall("CreateDatabase", database)
+
+	if !m.connected {
+		return ErrNotConnected
+	}
+
+	// Add database to the list if not already present
+	exists := false
+	for _, db := range m.Databases {
+		if db == database {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		m.Databases = append(m.Databases, database)
+	}
+
+	return nil
+}
+
+// DatabaseExists checks if a database exists.
+func (m *MockClient) DatabaseExists(database string) (bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	m.recordCall("DatabaseExists", database)
+
+	if !m.connected {
+		return false, ErrNotConnected
+	}
+
+	// Check if database is in the Databases list
+	for _, db := range m.Databases {
+		if db == database {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // GetTables returns the mock table list for a database.

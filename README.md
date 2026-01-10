@@ -27,11 +27,11 @@ Cadangkan aims to provide:
 - Go 1.21 or higher
 - Docker and Docker Compose (for local testing)
 - Git
-- MySQL client tools (for `mysqldump` utility)
+- MySQL client tools (for `mysqldump` and `mysql` utilities)
 
-### Installing mysqldump
+### Installing MySQL Client Tools
 
-Cadangkan uses `mysqldump` to create database backups. You need to install MySQL client tools, **not the full MySQL server**.
+Cadangkan uses `mysqldump` to create database backups and `mysql` to restore them. You need to install MySQL client tools, **not the full MySQL server**.
 
 **Linux (Debian/Ubuntu):**
 ```bash
@@ -65,8 +65,8 @@ echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc
 
 **Version Compatibility:**
 - MySQL client 8.0 is recommended for best compatibility with both MySQL 5.7 and 8.0 servers
-- A single `mysqldump` version can backup multiple MySQL server versions
-- Newer `mysqldump` can backup older MySQL servers without issues
+- A single MySQL client version can backup and restore multiple MySQL server versions
+- Newer MySQL client tools can work with older MySQL servers without issues
 
 ### Getting Started
 
@@ -180,6 +180,55 @@ cadangkan backup production --compression=none
 
 **Backup location:** Backups are stored in `~/.cadangkan/backups/[database]/` by default.
 
+### Restore MySQL Database
+
+**Using saved configuration (restore latest backup):**
+```bash
+cadangkan restore production
+```
+
+**Restore a specific backup:**
+```bash
+cadangkan restore production --from=2025-01-15-143022
+```
+
+**Restore to a different database:**
+```bash
+# Restore to an existing database
+cadangkan restore production --to=production_restored
+
+# Restore to a new database (creates it automatically)
+cadangkan restore production --to=new_database --create-db
+```
+
+**Direct mode (without saved config):**
+```bash
+cadangkan restore --host=127.0.0.1 --user=root --password=secret \
+  --database=mydb --from=2025-01-15-143022
+```
+
+**Safety options:**
+```bash
+# Dry-run: validate without executing
+cadangkan restore production --dry-run
+
+# Backup target database before restoring (if it exists)
+cadangkan restore production --backup-first
+
+# Skip confirmation prompt
+cadangkan restore production --yes
+
+# Show verbose output (including mysql command)
+cadangkan restore production --verbose
+```
+
+**Important Notes:**
+- By default, restores the **latest backup** if `--from` is not specified
+- Use `--create-db` to automatically create the target database if it doesn't exist
+- The `--to` flag allows restoring to a different database than the source
+- Restore operations require the `mysql` command-line client to be installed
+- Backups are automatically decompressed during restore
+
 ### Command Options
 
 **Database Management:**
@@ -206,6 +255,26 @@ Flags:
   --schema-only              Backup schema only (no data)
   --compression string       Compression type: gzip, none (default: "gzip")
   --output string            Output directory (default: ~/.cadangkan/backups)
+```
+
+**Restore:**
+```
+cadangkan restore [name] [flags]
+
+Flags:
+  --type string              Database type (default: "mysql")
+  --from string              Specific backup ID to restore (default: latest)
+  --to string                Target database name (overrides config database)
+  --create-db                Create database if it doesn't exist
+  --host string              Database host (overrides config)
+  --port int                 Database port (overrides config)
+  --user string              Database user (overrides config)
+  --password string          Database password (overrides config)
+  --database string          Database name (overrides config)
+  --dry-run                  Validate restore without executing
+  --backup-first             Backup target database before restore (if exists)
+  --yes, -y                  Skip confirmation prompt
+  --verbose, -v              Show verbose output including mysql command
 ```
 
 ## 📖 Documentation

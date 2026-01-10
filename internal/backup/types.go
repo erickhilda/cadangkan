@@ -231,3 +231,61 @@ func DefaultOptions() *BackupOptions {
 		ExcludeTables: []string{},
 	}
 }
+
+// RestoreOptions defines configuration for a restore operation.
+type RestoreOptions struct {
+	// BackupID is the specific backup to restore (empty = latest)
+	BackupID string
+
+	// Database is the target database name
+	Database string
+
+	// ConfigName is the configuration name (used for storage paths)
+	ConfigName string
+
+	// TargetDatabase is an optional different target database name
+	// If empty, uses Database
+	TargetDatabase string
+
+	// CreateDatabase creates the database if it doesn't exist
+	CreateDatabase bool
+
+	// DryRun validates without executing the restore
+	DryRun bool
+
+	// BackupFirst creates a backup of the target database before restore
+	BackupFirst bool
+
+	// SkipConfirmation skips the confirmation prompt
+	SkipConfirmation bool
+}
+
+// RestoreResult contains the result of a restore operation.
+type RestoreResult struct {
+	// BackupID is the ID of the backup that was restored
+	BackupID string
+
+	// TargetDatabase is the database that was restored
+	TargetDatabase string
+
+	// Duration is how long the restore took
+	Duration time.Duration
+
+	// Status indicates the restore outcome: "completed", "failed"
+	Status string
+
+	// StartedAt is when the restore started
+	StartedAt time.Time
+
+	// CompletedAt is when the restore completed
+	CompletedAt time.Time
+
+	// Error contains any error that occurred
+	Error error
+}
+
+// Constants for restore status
+const (
+	RestoreStatusCompleted = "completed"
+	RestoreStatusFailed    = "failed"
+)

@@ -259,6 +259,61 @@ func (c *Client) GetDatabases() ([]string, error) {
 	return databases, nil
 }
 
+// DatabaseExists checks if a database exists.
+func (c *Client) DatabaseExists(database string) (bool, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if !c.connected || c.db == nil {
+		return false, ErrNotConnected
+	}
+
+	if database == "" {
+		return false, &ConfigError{Field: "database", Message: "database name is required"}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.config.Timeout)
+	defer cancel()
+
+	query := "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?"
+	var result string
+	err := c.db.QueryRowContext(ctx, query, database).Scan(&result)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, WrapQueryError(query, "failed to check if database exists", err)
+	}
+
+	return true, nil
+}
+
+// CreateDatabase creates a new database.
+func (c *Client) CreateDatabase(database string) error {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if !c.connected || c.db == nil {
+		return ErrNotConnected
+	}
+
+	if database == "" {
+		return &ConfigError{Field: "database", Message: "database name is required"}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.config.Timeout)
+	defer cancel()
+
+	// Use IF NOT EXISTS for idempotency
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", database)
+	_, err := c.db.ExecContext(ctx, query)
+	if err != nil {
+		return WrapQueryError(query, "failed to create database", err)
+	}
+
+	return nil
+}
+
 // GetTables returns a list of all tables in the specified database.
 func (c *Client) GetTables(database string) ([]string, error) {
 	c.mu.RLock()

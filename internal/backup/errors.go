@@ -229,3 +229,76 @@ func WrapMetadataError(backupID, message string, err error) error {
 		Err:      err,
 	}
 }
+
+// RestoreError represents a general restore error.
+type RestoreError struct {
+	Database string
+	Message  string
+	Err      error
+}
+
+// Error returns the error message.
+func (e *RestoreError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("restore error for database %s: %s: %v", e.Database, e.Message, e.Err)
+	}
+	return fmt.Sprintf("restore error for database %s: %s", e.Database, e.Message)
+}
+
+// Unwrap returns the underlying error.
+func (e *RestoreError) Unwrap() error {
+	return e.Err
+}
+
+// BackupNotFoundError indicates that the requested backup was not found.
+type BackupNotFoundError struct {
+	BackupID string
+	Database string
+}
+
+// Error returns the error message.
+func (e *BackupNotFoundError) Error() string {
+	if e.Database != "" {
+		return fmt.Sprintf("backup %s not found for database %s", e.BackupID, e.Database)
+	}
+	return fmt.Sprintf("backup %s not found", e.BackupID)
+}
+
+// ChecksumMismatchError indicates that the backup checksum doesn't match.
+type ChecksumMismatchError struct {
+	BackupID         string
+	ExpectedChecksum string
+	ActualChecksum   string
+}
+
+// Error returns the error message.
+func (e *ChecksumMismatchError) Error() string {
+	return fmt.Sprintf("checksum mismatch for backup %s: expected %s, got %s", e.BackupID, e.ExpectedChecksum, e.ActualChecksum)
+}
+
+// IsRestoreError checks if the error is a RestoreError.
+func IsRestoreError(err error) bool {
+	var restoreErr *RestoreError
+	return errors.As(err, &restoreErr)
+}
+
+// IsBackupNotFoundError checks if the error is a BackupNotFoundError.
+func IsBackupNotFoundError(err error) bool {
+	var notFoundErr *BackupNotFoundError
+	return errors.As(err, &notFoundErr)
+}
+
+// IsChecksumMismatchError checks if the error is a ChecksumMismatchError.
+func IsChecksumMismatchError(err error) bool {
+	var checksumErr *ChecksumMismatchError
+	return errors.As(err, &checksumErr)
+}
+
+// WrapRestoreError wraps an error as a RestoreError.
+func WrapRestoreError(database, message string, err error) error {
+	return &RestoreError{
+		Database: database,
+		Message:  message,
+		Err:      err,
+	}
+}

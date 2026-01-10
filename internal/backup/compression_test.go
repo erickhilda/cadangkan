@@ -275,3 +275,90 @@ func TestCompressLargeData(t *testing.T) {
 	compressionRatio := float64(compressed.Len()) / float64(len(largeData))
 	assert.Less(t, compressionRatio, 0.1) // Should compress to less than 10%
 }
+
+func TestDecompressToReader(t *testing.T) {
+	t.Run("gzip compression", func(t *testing.T) {
+		// First compress some data
+		originalData := []byte("Test data for DecompressToReader")
+		compressor := NewCompressor(CompressionGzip)
+		var compressed bytes.Buffer
+
+		_, err := compressor.Compress(bytes.NewReader(originalData), &compressed)
+		require.NoError(t, err)
+
+		// Now use DecompressToReader
+		decompressor := NewDecompressor(CompressionGzip)
+		reader, err := decompressor.DecompressToReader(&compressed)
+		require.NoError(t, err)
+		defer reader.Close()
+
+		// Read decompressed data
+		decompressedData, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		assert.Equal(t, originalData, decompressedData)
+	})
+
+	t.Run("no compression", func(t *testing.T) {
+		originalData := []byte("Test data without compression")
+		reader := bytes.NewReader(originalData)
+
+		decompressor := NewDecompressor(CompressionNone)
+		decompressedReader, err := decompressor.DecompressToReader(reader)
+		require.NoError(t, err)
+		defer decompressedReader.Close()
+
+		// Read data
+		decompressedData, err := io.ReadAll(decompressedReader)
+		require.NoError(t, err)
+		assert.Equal(t, originalData, decompressedData)
+	})
+
+	t.Run("unsupported compression", func(t *testing.T) {
+		reader := bytes.NewReader([]byte("test data"))
+		decompressor := NewDecompressor("invalid")
+
+		_, err := decompressor.DecompressToReader(reader)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported compression")
+	})
+
+	t.Run("reader can be closed", func(t *testing.T) {
+		originalData := []byte("Test data")
+		compressor := NewCompressor(CompressionGzip)
+		var compressed bytes.Buffer
+
+		_, err := compressor.Compress(bytes.NewReader(originalData), &compressed)
+		require.NoError(t, err)
+
+		decompressor := NewDecompressor(CompressionGzip)
+		reader, err := decompressor.DecompressToReader(&compressed)
+		require.NoError(t, err)
+
+		// Close should not error
+		err = reader.Close()
+		assert.NoError(t, err)
+
+		// Closing again should also not error
+		err = reader.Close()
+		assert.NoError(t, err)
+	})
+
+	t.Run("round-trip with large data", func(t *testing.T) {
+		// Create larger test data
+		largeData := bytes.Repeat([]byte("This is test data. "), 1000)
+		compressor := NewCompressor(CompressionGzip)
+		var compressed bytes.Buffer
+
+		_, err := compressor.Compress(bytes.NewReader(largeData), &compressed)
+		require.NoError(t, err)
+
+		decompressor := NewDecompressor(CompressionGzip)
+		reader, err := decompressor.DecompressToReader(&compressed)
+		require.NoError(t, err)
+		defer reader.Close()
+
+		decompressedData, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		assert.Equal(t, largeData, decompressedData)
+	})
+}

@@ -234,6 +234,28 @@ func (d *Decompressor) DecompressFile(srcPath, dstPath string) (int64, error) {
 	return d.Decompress(srcFile, dstFile)
 }
 
+// DecompressToReader decompresses data from a reader and returns a reader for the decompressed data.
+// The returned reader must be closed by the caller.
+func (d *Decompressor) DecompressToReader(reader io.Reader) (io.ReadCloser, error) {
+	switch d.compression {
+	case CompressionGzip:
+		gzReader, err := gzip.NewReader(reader)
+		if err != nil {
+			return nil, WrapCompressionError("", "failed to create gzip reader", err)
+		}
+		return gzReader, nil
+
+	case CompressionNone:
+		// Return a no-op closer that just closes the reader if it's a ReadCloser
+		return io.NopCloser(reader), nil
+
+	default:
+		return nil, &CompressionError{
+			Message: fmt.Sprintf("unsupported compression: %s", d.compression),
+		}
+	}
+}
+
 // VerifyChecksum verifies the checksum of a compressed file.
 func VerifyChecksum(filePath, expectedChecksum string) (bool, error) {
 	file, err := os.Open(filePath)
@@ -253,7 +275,7 @@ func VerifyChecksum(filePath, expectedChecksum string) (bool, error) {
 
 // CountingWriter wraps a writer and counts bytes written.
 type CountingWriter struct {
-	writer      io.Writer
+	writer       io.Writer
 	bytesWritten int64
 }
 

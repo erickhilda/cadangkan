@@ -486,6 +486,153 @@ func TestClientGetDatabases(t *testing.T) {
 	})
 }
 
+func TestClientDatabaseExists(t *testing.T) {
+	t.Run("database exists", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		rows := sqlmock.NewRows([]string{"SCHEMA_NAME"}).
+			AddRow("testdb")
+		mock.ExpectQuery("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?").
+			WithArgs("testdb").
+			WillReturnRows(rows)
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		exists, err := client.DatabaseExists("testdb")
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("database does not exist", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		rows := sqlmock.NewRows([]string{"SCHEMA_NAME"})
+		mock.ExpectQuery("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?").
+			WithArgs("nonexistent").
+			WillReturnRows(rows)
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		exists, err := client.DatabaseExists("nonexistent")
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("not connected", func(t *testing.T) {
+		config := NewConfig().WithHost("localhost").WithUser("root")
+		client, _ := NewClient(config)
+
+		_, err := client.DatabaseExists("testdb")
+		assert.Error(t, err)
+		assert.Equal(t, ErrNotConnected, err)
+	})
+
+	t.Run("empty database name", func(t *testing.T) {
+		db, _, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		_, err = client.DatabaseExists("")
+		assert.Error(t, err)
+		assert.True(t, IsConfigError(err))
+	})
+
+	t.Run("query error", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		mock.ExpectQuery("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?").
+			WithArgs("testdb").
+			WillReturnError(errors.New("query failed"))
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		_, err = client.DatabaseExists("testdb")
+		assert.Error(t, err)
+	})
+}
+
+func TestClientCreateDatabase(t *testing.T) {
+	t.Run("successfully create database", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		mock.ExpectExec("CREATE DATABASE IF NOT EXISTS `newdb`").
+			WillReturnResult(sqlmock.NewResult(0, 0))
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		err = client.CreateDatabase("newdb")
+		assert.NoError(t, err)
+	})
+
+	t.Run("create existing database", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		// IF NOT EXISTS should succeed even if database exists
+		mock.ExpectExec("CREATE DATABASE IF NOT EXISTS `existing`").
+			WillReturnResult(sqlmock.NewResult(0, 0))
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		err = client.CreateDatabase("existing")
+		assert.NoError(t, err)
+	})
+
+	t.Run("not connected", func(t *testing.T) {
+		config := NewConfig().WithHost("localhost").WithUser("root")
+		client, _ := NewClient(config)
+
+		err := client.CreateDatabase("testdb")
+		assert.Error(t, err)
+		assert.Equal(t, ErrNotConnected, err)
+	})
+
+	t.Run("empty database name", func(t *testing.T) {
+		db, _, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		err = client.CreateDatabase("")
+		assert.Error(t, err)
+		assert.True(t, IsConfigError(err))
+	})
+
+	t.Run("execution error", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		mock.ExpectExec("CREATE DATABASE IF NOT EXISTS `testdb`").
+			WillReturnError(errors.New("permission denied"))
+
+		config := NewConfig().WithHost("localhost").WithUser("root").WithTimeout(5 * time.Second)
+		client, _ := NewClientWithDB(config, db)
+
+		err = client.CreateDatabase("testdb")
+		assert.Error(t, err)
+	})
+}
+
 func TestClientGetTables(t *testing.T) {
 	t.Run("successful get tables", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
@@ -1100,6 +1247,105 @@ func TestMockClientDatabaseInfo(t *testing.T) {
 	assert.Equal(t, info, result)
 }
 
+func TestMockClientDatabaseExists(t *testing.T) {
+	t.Run("database exists", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.SetConnected(true)
+		mock.Databases = []string{"db1", "db2", "testdb"}
+
+		exists, err := mock.DatabaseExists("testdb")
+		assert.NoError(t, err)
+		assert.True(t, exists)
+		assert.Equal(t, 1, mock.GetCallCount("DatabaseExists"))
+	})
+
+	t.Run("database does not exist", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.SetConnected(true)
+		mock.Databases = []string{"db1", "db2"}
+
+		exists, err := mock.DatabaseExists("nonexistent")
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("not connected", func(t *testing.T) {
+		mock := NewMockClient()
+		// Not connected
+
+		exists, err := mock.DatabaseExists("testdb")
+		assert.Error(t, err)
+		assert.Equal(t, ErrNotConnected, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("empty database list", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.SetConnected(true)
+		mock.Databases = []string{}
+
+		exists, err := mock.DatabaseExists("testdb")
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+}
+
+func TestMockClientCreateDatabase(t *testing.T) {
+	t.Run("create new database", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.SetConnected(true)
+		mock.Databases = []string{"db1", "db2"}
+
+		err := mock.CreateDatabase("newdb")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, mock.GetCallCount("CreateDatabase"))
+
+		// Verify database was added
+		databases, _ := mock.GetDatabases()
+		assert.Contains(t, databases, "newdb")
+		assert.Len(t, databases, 3)
+	})
+
+	t.Run("create existing database", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.SetConnected(true)
+		mock.Databases = []string{"db1", "db2", "existing"}
+
+		err := mock.CreateDatabase("existing")
+		assert.NoError(t, err)
+
+		// Verify no duplicate was added
+		databases, _ := mock.GetDatabases()
+		assert.Contains(t, databases, "existing")
+		count := 0
+		for _, db := range databases {
+			if db == "existing" {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count, "database should not be duplicated")
+	})
+
+	t.Run("not connected", func(t *testing.T) {
+		mock := NewMockClient()
+		// Not connected
+
+		err := mock.CreateDatabase("testdb")
+		assert.Error(t, err)
+		assert.Equal(t, ErrNotConnected, err)
+	})
+
+	t.Run("call tracking", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.SetConnected(true)
+
+		mock.CreateDatabase("db1")
+		mock.CreateDatabase("db2")
+
+		assert.Equal(t, 2, mock.GetCallCount("CreateDatabase"))
+	})
+}
+
 func TestMockClientCallTracking(t *testing.T) {
 	mock := NewMockClient()
 	mock.SetConnected(true)
@@ -1108,13 +1354,17 @@ func TestMockClientCallTracking(t *testing.T) {
 	mock.GetVersion()
 	mock.GetVersion()
 	mock.GetDatabases()
+	mock.DatabaseExists("testdb")
+	mock.CreateDatabase("newdb")
 
 	assert.Equal(t, 2, mock.GetCallCount("GetVersion"))
 	assert.Equal(t, 1, mock.GetCallCount("GetDatabases"))
+	assert.Equal(t, 1, mock.GetCallCount("DatabaseExists"))
+	assert.Equal(t, 1, mock.GetCallCount("CreateDatabase"))
 	assert.Equal(t, 0, mock.GetCallCount("GetTables"))
 
 	calls := mock.GetCalls()
-	assert.Len(t, calls, 3)
+	assert.Len(t, calls, 5)
 
 	mock.ResetCalls()
 	assert.Empty(t, mock.GetCalls())
@@ -1137,6 +1387,12 @@ func TestMockClientNotConnected(t *testing.T) {
 	assert.Equal(t, ErrNotConnected, err)
 
 	_, err = mock.Execute("INSERT INTO users VALUES (1)")
+	assert.Equal(t, ErrNotConnected, err)
+
+	_, err = mock.DatabaseExists("testdb")
+	assert.Equal(t, ErrNotConnected, err)
+
+	err = mock.CreateDatabase("testdb")
 	assert.Equal(t, ErrNotConnected, err)
 }
 

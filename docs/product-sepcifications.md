@@ -865,7 +865,7 @@ $ sudo cadangkan service install
 Installing Cadangkan as system service...
 
 ✓ Created systemd unit file: /etc/systemd/system/cadangkan.service
-✓ Created user: dbshield
+✓ Created user: cadangkan
 ✓ Set permissions
 ✓ Reloaded systemd daemon
 ✓ Service installed successfully
@@ -888,8 +888,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=dbshield
-Group=dbshield
+User=cadangkan
+Group=cadangkan
 ExecStart=/usr/local/bin/cadangkan daemon
 Restart=always
 RestartSec=10
@@ -902,13 +902,13 @@ WantedBy=multi-user.target
 
 **macOS (launchd):**
 ```xml
-<!-- ~/Library/LaunchAgents/com.dbshield.daemon.plist -->
+<!-- ~/Library/LaunchAgents/com.cadangkan.daemon.plist -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.dbshield.daemon</string>
+    <string>com.cadangkan.daemon</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/cadangkan</string>
@@ -1946,11 +1946,11 @@ databases:
 - [x] CLI: `backup` command
 
 **Week 2: Configuration & Restore**
-- [ ] Configuration system (YAML)
-- [ ] Credential encryption
-- [ ] Multi-database support
-- [ ] Restore implementation
-- [ ] CLI: `add`, `restore`, `list` commands
+- [x] Configuration system (YAML)
+- [x] Credential encryption
+- [x] Multi-database support
+- [x] Restore implementation
+- [x] CLI: `add`, `restore`, `list` commands
 
 **Week 3: Automation & Polish**
 - [ ] Cron scheduling
@@ -2880,9 +2880,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=dbshield
-Group=dbshield
-WorkingDirectory=/home/dbshield
+User=cadangkan
+Group=cadangkan
+WorkingDirectory=/home/cadangkan
 ExecStart=/usr/local/bin/cadangkan daemon
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
@@ -2896,7 +2896,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/home/dbshield/.cadangkan
+ReadWritePaths=/home/cadangkan/.cadangkan
 
 [Install]
 WantedBy=multi-user.target

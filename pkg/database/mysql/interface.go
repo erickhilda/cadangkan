@@ -25,6 +25,8 @@ type DatabaseClient interface {
 	GetDatabaseSize(database string) (int64, error)
 	GetTableInfo(database, table string) (*TableInfo, error)
 	GetDatabaseInfo(database string) (*DatabaseInfo, error)
+	CreateDatabase(database string) error
+	DatabaseExists(database string) (bool, error)
 }
 
 // Ensure Client implements DatabaseClient interface.

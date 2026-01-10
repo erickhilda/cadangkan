@@ -95,10 +95,16 @@ func (s *RestoreService) Restore(options *RestoreOptions) (*RestoreResult, error
 			return nil, result.Error
 		}
 		if !valid {
+			// Calculate actual checksum for error reporting
+			actualChecksum, calcErr := CalculateChecksum(backupPath)
+			if calcErr != nil {
+				// If we can't calculate checksum, still report mismatch but with error note
+				actualChecksum = fmt.Sprintf("<failed to calculate: %v>", calcErr)
+			}
 			result.Error = &ChecksumMismatchError{
 				BackupID:         backupEntry.BackupID,
 				ExpectedChecksum: metadata.Backup.Checksum,
-				ActualChecksum:   "", // We don't recalculate, just report mismatch
+				ActualChecksum:   actualChecksum,
 			}
 			return nil, result.Error
 		}

@@ -40,19 +40,20 @@ type CompressResult struct {
 
 // Compress compresses data from reader to writer, calculating checksum during compression.
 // Returns the number of bytes read, bytes written, and the SHA-256 checksum.
+// The checksum is calculated on the compressed output to match VerifyChecksum().
 func (c *Compressor) Compress(reader io.Reader, writer io.Writer) (*CompressResult, error) {
 	var bytesRead int64
 	var bytesWritten int64
 
-	// Create hash for checksum calculation
+	// Create hash for checksum calculation of compressed output
 	hasher := sha256.New()
 
-	// Create a multi-writer to calculate checksum while writing
-	checksumReader := io.TeeReader(reader, hasher)
+	// Create a multi-writer to calculate checksum of compressed data while writing
+	checksumWriter := io.MultiWriter(writer, hasher)
 
 	switch c.compression {
 	case CompressionGzip:
-		result, err := c.compressGzip(checksumReader, writer)
+		result, err := c.compressGzip(reader, checksumWriter)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +62,7 @@ func (c *Compressor) Compress(reader io.Reader, writer io.Writer) (*CompressResu
 
 	case CompressionNone:
 		var err error
-		bytesWritten, err = io.Copy(writer, checksumReader)
+		bytesWritten, err = io.Copy(checksumWriter, reader)
 		if err != nil {
 			return nil, WrapCompressionError("", "failed to copy data", err)
 		}
@@ -73,7 +74,7 @@ func (c *Compressor) Compress(reader io.Reader, writer io.Writer) (*CompressResu
 		}
 	}
 
-	// Calculate final checksum
+	// Calculate final checksum of compressed output
 	checksum := fmt.Sprintf("sha256:%x", hasher.Sum(nil))
 
 	return &CompressResult{

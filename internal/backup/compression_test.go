@@ -196,6 +196,56 @@ func TestVerifyChecksum(t *testing.T) {
 	assert.False(t, valid)
 }
 
+func TestCompressChecksumMatchesVerification(t *testing.T) {
+	t.Run("gzip compression", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outputPath := filepath.Join(tmpDir, "output.gz")
+
+		content := []byte("This is test data for checksum verification.")
+		reader := bytes.NewReader(content)
+
+		// Compress and get checksum
+		compressor := NewCompressor(CompressionGzip)
+		result, err := compressor.StreamCompress(reader, outputPath)
+		require.NoError(t, err)
+		assert.NotEmpty(t, result.Checksum)
+
+		// Verify the checksum matches what VerifyChecksum calculates
+		valid, err := VerifyChecksum(outputPath, result.Checksum)
+		require.NoError(t, err)
+		assert.True(t, valid, "Compressed checksum should match verification checksum")
+
+		// Also verify using CalculateChecksum directly
+		calculatedChecksum, err := CalculateChecksum(outputPath)
+		require.NoError(t, err)
+		assert.Equal(t, result.Checksum, calculatedChecksum, "Compressed checksum should match calculated checksum")
+	})
+
+	t.Run("no compression", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outputPath := filepath.Join(tmpDir, "output.sql")
+
+		content := []byte("This is test data without compression.")
+		reader := bytes.NewReader(content)
+
+		// Compress (no compression) and get checksum
+		compressor := NewCompressor(CompressionNone)
+		result, err := compressor.StreamCompress(reader, outputPath)
+		require.NoError(t, err)
+		assert.NotEmpty(t, result.Checksum)
+
+		// Verify the checksum matches what VerifyChecksum calculates
+		valid, err := VerifyChecksum(outputPath, result.Checksum)
+		require.NoError(t, err)
+		assert.True(t, valid, "Uncompressed checksum should match verification checksum")
+
+		// Also verify using CalculateChecksum directly
+		calculatedChecksum, err := CalculateChecksum(outputPath)
+		require.NoError(t, err)
+		assert.Equal(t, result.Checksum, calculatedChecksum, "Uncompressed checksum should match calculated checksum")
+	})
+}
+
 func TestCountingWriter(t *testing.T) {
 	var buf bytes.Buffer
 	counter := NewCountingWriter(&buf)

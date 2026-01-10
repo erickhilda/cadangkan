@@ -243,8 +243,9 @@ func TestRestoreServiceRestore(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create metadata with wrong checksum (different from actual)
+		wrongChecksum := "sha256:wrong_checksum_value_that_does_not_match"
 		metadata := createTestMetadata(backupID, "testdb", backupID+".sql.gz", "gzip")
-		metadata.Backup.Checksum = "sha256:wrong_checksum_value_that_does_not_match_" + actualChecksum
+		metadata.Backup.Checksum = wrongChecksum
 		metadataPath := filepath.Join(dbPath, backupID+".meta.json")
 		saveMetadata(t, metadataPath, metadata)
 
@@ -260,6 +261,13 @@ func TestRestoreServiceRestore(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, result)
 		assert.True(t, IsChecksumMismatchError(err))
+
+		// Verify error includes actual checksum
+		var checksumErr *ChecksumMismatchError
+		require.ErrorAs(t, err, &checksumErr)
+		assert.Equal(t, wrongChecksum, checksumErr.ExpectedChecksum)
+		assert.Equal(t, actualChecksum, checksumErr.ActualChecksum, "Error should include actual checksum for debugging")
+		assert.Contains(t, err.Error(), actualChecksum, "Error message should include actual checksum")
 	})
 
 	t.Run("checksum validation passes", func(t *testing.T) {

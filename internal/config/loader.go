@@ -8,26 +8,30 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Manager handles configuration loading and saving.
-type Manager struct {
+// YAMLManager handles configuration loading and saving using YAML files.
+type YAMLManager struct {
 	configPath string
 }
 
-// NewManager creates a new config manager.
-func NewManager() (*Manager, error) {
+// Ensure YAMLManager implements the Manager interface.
+var _ Manager = (*YAMLManager)(nil)
+
+// NewManager creates a new YAML-based config manager (default).
+// Future: Could support --backend=sqlite flag or env var.
+func NewManager() (Manager, error) {
 	configPath, err := GetConfigPath()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Manager{
+	return &YAMLManager{
 		configPath: configPath,
 	}, nil
 }
 
 // Load loads the configuration from disk.
 // If the config file doesn't exist, returns an empty config.
-func (m *Manager) Load() (*Config, error) {
+func (m *YAMLManager) Load() (*Config, error) {
 	// Check if config file exists
 	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
 		// Return empty config
@@ -60,7 +64,7 @@ func (m *Manager) Load() (*Config, error) {
 }
 
 // Save saves the configuration to disk.
-func (m *Manager) Save(config *Config) error {
+func (m *YAMLManager) Save(config *Config) error {
 	// Validate config before saving
 	if err := config.Validate(); err != nil {
 		return err
@@ -87,7 +91,7 @@ func (m *Manager) Save(config *Config) error {
 }
 
 // GetDatabase retrieves a specific database configuration.
-func (m *Manager) GetDatabase(name string) (*DatabaseConfig, error) {
+func (m *YAMLManager) GetDatabase(name string) (*DatabaseConfig, error) {
 	config, err := m.Load()
 	if err != nil {
 		return nil, err
@@ -103,7 +107,7 @@ func (m *Manager) GetDatabase(name string) (*DatabaseConfig, error) {
 }
 
 // AddDatabase adds or updates a database configuration.
-func (m *Manager) AddDatabase(name string, db *DatabaseConfig) error {
+func (m *YAMLManager) AddDatabase(name string, db *DatabaseConfig) error {
 	config, err := m.Load()
 	if err != nil {
 		return err
@@ -125,7 +129,7 @@ func (m *Manager) AddDatabase(name string, db *DatabaseConfig) error {
 }
 
 // RemoveDatabase removes a database configuration.
-func (m *Manager) RemoveDatabase(name string) error {
+func (m *YAMLManager) RemoveDatabase(name string) error {
 	config, err := m.Load()
 	if err != nil {
 		return err
@@ -144,7 +148,7 @@ func (m *Manager) RemoveDatabase(name string) error {
 }
 
 // ListDatabases returns a list of all configured database names.
-func (m *Manager) ListDatabases() ([]string, error) {
+func (m *YAMLManager) ListDatabases() ([]string, error) {
 	config, err := m.Load()
 	if err != nil {
 		return nil, err
@@ -159,7 +163,7 @@ func (m *Manager) ListDatabases() ([]string, error) {
 }
 
 // DatabaseExists checks if a database configuration exists.
-func (m *Manager) DatabaseExists(name string) (bool, error) {
+func (m *YAMLManager) DatabaseExists(name string) (bool, error) {
 	config, err := m.Load()
 	if err != nil {
 		return false, err

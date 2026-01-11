@@ -39,7 +39,7 @@ func TestManagerLoadSave(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	mgr := &Manager{configPath: configPath}
+	mgr := &YAMLManager{configPath: configPath}
 
 	// Test loading non-existent config (should return empty config)
 	cfg, err := mgr.Load()
@@ -113,7 +113,7 @@ func TestManagerAddDatabase(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	mgr := &Manager{configPath: configPath}
+	mgr := &YAMLManager{configPath: configPath}
 
 	// Add a database
 	db := &DatabaseConfig{
@@ -153,7 +153,7 @@ func TestManagerGetDatabase(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	mgr := &Manager{configPath: configPath}
+	mgr := &YAMLManager{configPath: configPath}
 
 	// Add a database
 	db := &DatabaseConfig{
@@ -198,7 +198,7 @@ func TestManagerRemoveDatabase(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	mgr := &Manager{configPath: configPath}
+	mgr := &YAMLManager{configPath: configPath}
 
 	// Add a database
 	db := &DatabaseConfig{
@@ -241,7 +241,7 @@ func TestManagerListDatabases(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	mgr := &Manager{configPath: configPath}
+	mgr := &YAMLManager{configPath: configPath}
 
 	// Add multiple databases
 	databases := []string{"db1", "db2", "db3"}
@@ -286,7 +286,7 @@ func TestManagerDatabaseExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	mgr := &Manager{configPath: configPath}
+	mgr := &YAMLManager{configPath: configPath}
 
 	// Add a database
 	db := &DatabaseConfig{

@@ -24,8 +24,10 @@ func main() {
 			listCommand(),
 			testCommand(),
 			removeCommand(),
+			editCommand(),
 			// Backup operations
 			backupCommand(),
+			backupListCommand(),
 			restoreCommand(),
 			// Future: scheduleCommand()
 		},

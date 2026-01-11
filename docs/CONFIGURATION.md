@@ -53,6 +53,23 @@ You can still override config values with flags:
 cadangkan backup production --database=other_db
 ```
 
+### Editing a Database
+
+Edit an existing database configuration:
+
+```bash
+# Update host
+cadangkan edit --host=newhost.example.com production
+
+# Update password (interactive prompt)
+cadangkan edit --password production
+
+# Update multiple fields
+cadangkan edit --host=newhost --port=3307 production
+```
+
+**Note:** Flags come first, followed by the database name. Only specified fields will be updated.
+
 ### Removing a Database
 
 Remove a database configuration:
@@ -263,6 +280,56 @@ cadangkan remove production
 cadangkan remove production --force
 ```
 
+### edit
+
+Edit an existing database configuration:
+
+```bash
+cadangkan edit [flags] <name>
+```
+
+**Important:** Flags come first, followed by the database name.
+
+**Optional flags:**
+- `--host` - Update database host
+- `--port` - Update database port
+- `--user` - Update database user
+- `--database` - Update database name
+- `--password` - Update password (triggers interactive prompt if no value provided)
+- `--password-stdin` - Read password from stdin
+- `--skip-test` - Skip connection test after update
+
+**Behavior:**
+- Only the fields specified via flags will be updated
+- All other fields remain unchanged (partial update)
+- Connection is tested after update unless `--skip-test` is used
+- Password is re-encrypted if changed
+- When using `--password` without a value, you'll be prompted to enter the password interactively
+
+**Examples:**
+
+```bash
+# Update host only
+cadangkan edit --host=newhost.example.com production
+
+# Update multiple fields
+cadangkan edit --host=newhost --port=3307 production
+
+# Update password (interactive prompt - recommended)
+cadangkan edit --password production
+
+# Update password with value (not recommended for security)
+cadangkan edit --password=mypassword production
+
+# Update password from stdin
+echo "newpassword" | cadangkan edit --password-stdin production
+
+# Update without connection test
+cadangkan edit --host=newhost --skip-test production
+```
+
+**Note:** For security, prefer using `--password` (interactive prompt) or `--password-stdin` instead of passing the password directly via `--password=value`.
+
 ### backup
 
 Create a backup (supports both named and direct mode):
@@ -272,6 +339,54 @@ cadangkan backup [name] [flags]
 ```
 
 See main documentation for full backup command reference.
+
+### backup-list
+
+List all backups for configured databases:
+
+```bash
+cadangkan backup-list [database-name] [flags]
+```
+
+Aliases: `backups`
+
+**Optional flags:**
+- `--format` - Output format: `table` (default) or `json`
+
+**Behavior:**
+- If database name is provided, lists backups for that database only
+- If no database name is provided, lists backups for all configured databases
+- Backups are sorted by creation date (newest first)
+- Shows backup ID, date, size, and status
+
+**Examples:**
+
+```bash
+# List all backups for all databases
+cadangkan backup-list
+
+# List backups for specific database
+cadangkan backup-list production
+
+# Output in JSON format
+cadangkan backup-list production --format=json
+
+# Using alias
+cadangkan backups production
+```
+
+**Output example:**
+
+```
+Backups for production
+================================================================================
+BACKUP ID              DATE                 SIZE      STATUS
+2026-01-08-133600      2026-01-08 13:36:00  2.4 MB    completed
+2026-01-07-120000      2026-01-07 12:00:00  2.3 MB    completed
+2026-01-06-120000      2026-01-06 12:00:00  2.2 MB    completed
+
+Total: 3 backup(s)
+```
 
 ## Troubleshooting
 
@@ -312,9 +427,16 @@ Error: connection test failed: dial tcp: connect: connection refused
 3. Firewall blocking connection
 4. Credentials are wrong
 
-**Solution:** Update the configuration:
+**Solution:** Update the configuration using the `edit` command:
 
 ```bash
+# Update host
+cadangkan edit production --host=correct-host
+
+# Or update multiple fields
+cadangkan edit production --host=correct-host --port=3307
+
+# Or remove and re-add (if many fields need changing)
 cadangkan remove production --force
 cadangkan add --host=correct-host --user=... --database=... mysql production
 ```

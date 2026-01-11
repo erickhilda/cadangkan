@@ -1950,7 +1950,7 @@ databases:
 - [x] Credential encryption
 - [x] Multi-database support
 - [x] Restore implementation
-- [x] CLI: `add`, `restore`, `list` commands
+- [x] CLI: `add`, `restore`, `list`, `edit`, `backup-list` commands
 
 **Week 3: Automation & Polish**
 - [ ] Cron scheduling

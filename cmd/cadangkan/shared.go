@@ -100,3 +100,94 @@ func ensureConfigDir() error {
 	configDir := filepath.Join(homeDir, ".cadangkan")
 	return os.MkdirAll(configDir, 0755)
 }
+
+// formatTimeAgo formats a time as "X ago" (e.g., "2 hours ago", "3 days ago")
+func formatTimeAgo(t time.Time) string {
+	now := time.Now()
+	diff := now.Sub(t)
+
+	if diff < time.Minute {
+		return "just now"
+	} else if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		if minutes == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", minutes)
+	} else if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	} else if diff < 30*24*time.Hour {
+		days := int(diff.Hours() / 24)
+		if days == 1 {
+			return "1 day ago"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	} else if diff < 365*24*time.Hour {
+		months := int(diff.Hours() / (24 * 30))
+		if months == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", months)
+	} else {
+		years := int(diff.Hours() / (24 * 365))
+		if years == 1 {
+			return "1 year ago"
+		}
+		return fmt.Sprintf("%d years ago", years)
+	}
+}
+
+// formatNextRun formats a time as "in X" (e.g., "in 22 hours", "in 6 days")
+func formatNextRun(t time.Time) string {
+	now := time.Now()
+	diff := t.Sub(now)
+
+	if diff < 0 {
+		return "overdue"
+	} else if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		if minutes == 1 {
+			return "in 1 minute"
+		}
+		return fmt.Sprintf("in %d minutes", minutes)
+	} else if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "in 1 hour"
+		}
+		return fmt.Sprintf("in %d hours", hours)
+	} else {
+		days := int(diff.Hours() / 24)
+		if days == 1 {
+			return "in 1 day"
+		}
+		return fmt.Sprintf("in %d days", days)
+	}
+}
+
+// getStatusIndicator returns a status indicator symbol based on status string
+func getStatusIndicator(status string) string {
+	switch status {
+	case "healthy":
+		return fmt.Sprintf("%s✓%s", colorGreen, colorReset)
+	case "warning":
+		return fmt.Sprintf("%s⚠%s", colorYellow, colorReset)
+	case "critical":
+		return fmt.Sprintf("%s✗%s", colorRed, colorReset)
+	default:
+		return "?"
+	}
+}
+
+// formatStorageUsage formats storage usage as "X / Y (Z%)"
+func formatStorageUsage(used int64, total uint64) string {
+	if total == 0 {
+		return backup.FormatBytes(used)
+	}
+	percentage := (float64(used) / float64(total)) * 100.0
+	return fmt.Sprintf("%s / %s (%.1f%%)", backup.FormatBytes(used), backup.FormatBytes(int64(total)), percentage)
+}

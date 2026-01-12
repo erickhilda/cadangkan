@@ -29,6 +29,10 @@ func main() {
 			backupCommand(),
 			backupListCommand(),
 			restoreCommand(),
+			// Status & monitoring
+			statusCommand(),
+			healthCommand(),
+			storageCommand(),
 			// Future: scheduleCommand()
 		},
 	}

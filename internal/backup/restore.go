@@ -133,12 +133,9 @@ func (s *RestoreService) Restore(options *RestoreOptions) (*RestoreResult, error
 		}
 	}
 
-	// If backup-first and database exists, create backup
-	if options.BackupFirst && dbExists {
-		// Note: This would require creating a backup service instance
-		// For now, we'll skip this and let the CLI handle it
-		// TODO: Implement backup-first functionality
-	}
+	// Note: backup-first functionality is handled at the CLI layer (cmd/cadangkan/restore.go)
+	// This keeps the service layer focused on restore logic while the CLI orchestrates
+	// the backup-before-restore workflow with proper user feedback.
 
 	// Dry-run: validate without executing
 	if options.DryRun {

@@ -364,9 +364,57 @@ func runRestore(c *cli.Context) error {
 
 	// Backup-first option
 	if c.Bool("backup-first") && dbExists {
-		printInfo("Creating backup of target database before restore...")
-		// TODO: Implement backup-first functionality
-		printWarning("backup-first not yet implemented, skipping")
+		printInfo(fmt.Sprintf("Creating safety backup of '%s' before restore...", targetDatabase))
+
+		// Create backup service with the current database connection
+		backupConfig := &mysql.Config{
+			Host:     host,
+			Port:     port,
+			User:     user,
+			Password: password,
+			Database: targetDatabase,
+			Timeout:  10 * time.Second,
+		}
+
+		// Create a new client for backup
+		backupClient, err := mysql.NewClient(backupConfig)
+		if err != nil {
+			printError("Failed to create backup client")
+			return fmt.Errorf("backup-first failed: %w", err)
+		}
+
+		if err := backupClient.Connect(); err != nil {
+			printError("Failed to connect for backup")
+			return fmt.Errorf("backup-first failed: %w", err)
+		}
+
+		backupService := backup.NewService(backupClient, localStorage, backupConfig)
+		if verbose {
+			backupService.SetVerbose(true)
+		}
+
+		// Create backup with special naming to indicate it's a pre-restore backup
+		backupOptions := &backup.BackupOptions{
+			Database:    targetDatabase,
+			ConfigName:  configName,
+			Compression: backup.CompressionGzip,
+			Tables:      nil,
+			ExcludeTables: nil,
+			SchemaOnly:  false,
+		}
+
+		// Execute backup
+		backupResult, err := backupService.Backup(backupOptions)
+		backupClient.Close()
+
+		if err != nil {
+			printError("Failed to create safety backup")
+			printWarning("Aborting restore to prevent data loss")
+			return fmt.Errorf("backup-first failed: %w", err)
+		}
+
+		printSuccess(fmt.Sprintf("Safety backup created: %s (%s)", backupResult.BackupID, backup.FormatBytes(backupResult.SizeBytes)))
+		fmt.Println()
 	}
 
 	// Execute restore

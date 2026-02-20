@@ -29,11 +29,14 @@ func main() {
 			backupCommand(),
 			backupListCommand(),
 			restoreCommand(),
+			cleanupCommand(),
+			// Scheduling
+			scheduleCommand(),
+			daemonCommand(),
 			// Status & monitoring
 			statusCommand(),
 			healthCommand(),
 			storageCommand(),
-			// Future: scheduleCommand()
 		},
 	}
 

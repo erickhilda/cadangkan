@@ -191,3 +191,44 @@ func formatStorageUsage(used int64, total uint64) string {
 	percentage := (float64(used) / float64(total)) * 100.0
 	return fmt.Sprintf("%s / %s (%.1f%%)", backup.FormatBytes(used), backup.FormatBytes(int64(total)), percentage)
 }
+
+// formatAge formats a time as age string (e.g., "2 hours", "3 days")
+func formatAge(t time.Time) string {
+	now := time.Now()
+	diff := now.Sub(t)
+
+	if diff < time.Minute {
+		return "< 1 minute"
+	} else if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		if minutes == 1 {
+			return "1 minute"
+		}
+		return fmt.Sprintf("%d minutes", minutes)
+	} else if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "1 hour"
+		}
+		return fmt.Sprintf("%d hours", hours)
+	} else if diff < 30*24*time.Hour {
+		days := int(diff.Hours() / 24)
+		if days == 1 {
+			return "1 day"
+		}
+		return fmt.Sprintf("%d days", days)
+	} else if diff < 365*24*time.Hour {
+		months := int(diff.Hours() / (24 * 30))
+		if months == 1 {
+			return "1 month"
+		}
+		return fmt.Sprintf("%d months", months)
+	} else {
+		years := int(diff.Hours() / (24 * 365))
+		if years == 1 {
+			return "1 year"
+		}
+		return fmt.Sprintf("%d years", years)
+	}
+}
+

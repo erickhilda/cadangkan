@@ -173,6 +173,18 @@ func (m *YAMLManager) DatabaseExists(name string) (bool, error) {
 	return exists, nil
 }
 
+// UpdateDatabase updates an existing database configuration.
+// This is an alias for AddDatabase since it handles both add and update.
+func (m *YAMLManager) UpdateDatabase(name string, db *DatabaseConfig) error {
+	return m.AddDatabase(name, db)
+}
+
+// LoadConfig loads the full configuration.
+// This is an alias for Load() for convenience.
+func (m *YAMLManager) LoadConfig() (*Config, error) {
+	return m.Load()
+}
+
 // GetConfigPath returns the path to the config file.
 func GetConfigPath() (string, error) {
 	homeDir, err := os.UserHomeDir()

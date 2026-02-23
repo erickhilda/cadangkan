@@ -29,6 +29,7 @@ func main() {
 			backupCommand(),
 			backupListCommand(),
 			restoreCommand(),
+			importCommand(),
 			cleanupCommand(),
 			// Scheduling
 			scheduleCommand(),

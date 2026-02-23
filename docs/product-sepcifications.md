@@ -1958,6 +1958,7 @@ databases:
 - [ ] Retention policies
 - [ ] Status/health monitoring
 - [ ] CLI: `schedule`, `service`, `status` commands
+- [ ] Fix CLI flag parsing order: urfave/cli ignores flags placed after positional arguments. Affects `backup`, `restore`, `import`, `cleanup`, `remove`, `edit`, `backup-list`, and `schedule set` commands. README examples currently show the broken order (e.g. `cadangkan backup production --tables=users`). Either fix the parser behavior or update all examples to flags-first (e.g. `cadangkan backup --tables=users production`)
 - [ ] Testing and bug fixes
 - [ ] Documentation
 

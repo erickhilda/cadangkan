@@ -229,6 +229,42 @@ cadangkan restore production --verbose
 - Restore operations require the `mysql` command-line client to be installed
 - Backups are automatically decompressed during restore
 
+### Import External SQL Dumps
+
+Import SQL dump files from any source (mysqldump, DBeaver, TablePlus, phpMyAdmin, etc.) into a configured database.
+
+**Basic import:**
+```bash
+cadangkan import mydb --file /path/to/dump.sql
+```
+
+**Import a gzip-compressed dump:**
+```bash
+cadangkan import mydb --file /path/to/dump.sql.gz
+```
+
+**Import to a different database:**
+```bash
+cadangkan import mydb --file /path/to/dump.sql --to other_db
+```
+
+**Create the database if it doesn't exist:**
+```bash
+cadangkan import mydb --file /path/to/dump.sql --create-db
+```
+
+**Skip confirmation and show verbose output:**
+```bash
+cadangkan import mydb --file /path/to/dump.sql --yes --verbose
+```
+
+**Important Notes:**
+- The `--file` flag is required and accepts `.sql` or `.sql.gz` files
+- Compression is auto-detected from the file extension
+- The target database must already exist unless `--create-db` is used
+- Existing data in the target database may be overwritten
+- Requires the `mysql` command-line client to be installed
+
 ### Command Options
 
 **Database Management:**
@@ -275,6 +311,18 @@ Flags:
   --backup-first             Backup target database before restore (if exists)
   --yes, -y                  Skip confirmation prompt
   --verbose, -v              Show verbose output including mysql command
+```
+
+**Import:**
+```
+cadangkan import <config-name> [flags]
+
+Flags:
+  --file string              Path to the SQL dump file (.sql or .sql.gz) [required]
+  --to string                Target database name (overrides config database)
+  --create-db                Create database if it doesn't exist
+  --yes, -y                  Skip confirmation prompt
+  --verbose, -v              Show mysql command being executed
 ```
 
 ## 📖 Documentation
